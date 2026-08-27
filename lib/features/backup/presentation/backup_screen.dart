@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../application/backup_providers.dart';
 import '../domain/backup_models.dart';
@@ -63,6 +66,26 @@ class BackupScreen extends ConsumerWidget {
     if (passphrase == null || passphrase.isEmpty) return;
     try {
       final result = await ref.read(backupRepositoryProvider).exportEncryptedBackup(passphrase);
+      if (!context.mounted) return;
+
+      // Two ways out for the same bytes: save to a folder (the file stays
+      // on this device, e.g. a synced cloud-drive folder), or hand it to
+      // the OS share sheet (send it directly to another app — this is the
+      // "sync my phone and my computer" path: export on the phone, share
+      // to Zalo/Drive/Bluetooth/email, then Restore on the other device).
+      final action = await _chooseExportAction(context);
+      if (action == null) return;
+
+      if (action == _ExportAction.share) {
+        await SharePlus.instance.share(ShareParams(
+          text: 'Finance Tool backup',
+          files: [
+            XFile.fromData(Uint8List.fromList(result.bytes), name: result.suggestedFileName),
+          ],
+        ));
+        return;
+      }
+
       final saved = await ref.read(backupTransportProvider).save(
             bytes: result.bytes,
             suggestedFileName: result.suggestedFileName,
@@ -72,6 +95,25 @@ class BackupScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) _showMessage(context, 'Export failed: $e');
     }
+  }
+
+  Future<_ExportAction?> _chooseExportAction(BuildContext context) {
+    return showDialog<_ExportAction>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Export encrypted backup'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop(_ExportAction.save),
+            child: const Text('Save to a folder'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop(_ExportAction.share),
+            child: const Text('Share…'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _exportPlain(BuildContext context, WidgetRef ref, {required bool isCsv}) async {
@@ -174,3 +216,5 @@ class BackupScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
+
+enum _ExportAction { save, share }
