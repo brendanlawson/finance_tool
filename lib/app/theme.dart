@@ -20,6 +20,13 @@ ThemeData _buildTheme(Brightness brightness) {
   ).copyWith(
     primary: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
     secondary: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+    // fromSeed also derives "container" tones (used by the FAB and
+    // selected nav indicators) from the original seed color — left
+    // alone, those would be the one spot still showing a saturated
+    // brand-ish color instead of the flat grey palette everything else
+    // now uses.
+    primaryContainer: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+    onPrimaryContainer: isDark ? Colors.grey.shade100 : Colors.grey.shade900,
   );
 
   return ThemeData(
@@ -48,6 +55,12 @@ ThemeData _buildTheme(Brightness brightness) {
     ),
     navigationRailTheme: NavigationRailThemeData(
       indicatorColor: scheme.surfaceContainerHighest,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      elevation: 0,
+      backgroundColor: scheme.primaryContainer,
+      foregroundColor: scheme.onPrimaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
