@@ -1,4 +1,5 @@
 import 'package:finance_tool/app/app.dart';
+import 'package:finance_tool/core/providers/app_lock_providers.dart';
 import 'package:finance_tool/features/categories/application/category_providers.dart';
 import 'package:finance_tool/features/categories/domain/category_entity.dart';
 import 'package:finance_tool/features/dashboard/application/dashboard_providers.dart';
@@ -37,6 +38,10 @@ final _fakeProfile = Profile(
 // type, never spell the type name yourself).
 // ignore: strict_top_level_inference
 _baseOverrides() => [
+      // Never touch real secure storage in a widget test — there is no
+      // platform channel behind it here, and pretending no PIN is set
+      // keeps LockGate a no-op so it doesn't gate these tests at all.
+      isPinSetProvider.overrideWith((ref) => Future.value(false)),
       profileProvider.overrideWith((ref) => Stream.value(_fakeProfile)),
       walletsProvider.overrideWith((ref) => Stream.value(const <Wallet>[])),
       debtsProvider(null).overrideWith((ref) => Stream.value(const <Debt>[])),

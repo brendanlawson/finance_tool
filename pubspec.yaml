@@ -58,7 +58,12 @@ dependencies:
 
   # Security: DB passphrase + PIN salt live in OS-native secure storage,
   # never in the database or app preferences.
-  flutter_secure_storage: ^11.0.0
+  # Pinned (not ^) at 10.3.1: 11.0.0+ raises compileSdk to Android 37,
+  # which as of this writing only exists under a "37.0" minor-version
+  # package name that this project's Gradle/AGP setup fails to resolve
+  # ("Failed to find target with hash string 'android-37'"). Revisit once
+  # that's sorted out upstream.
+  flutter_secure_storage: 10.3.1
 
   # Dashboard charts
   fl_chart: ^1.2.0

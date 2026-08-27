@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../backup/presentation/backup_screen.dart';
 import '../../categories/presentation/categories_screen.dart';
 import '../../wallets/presentation/wallets_screen.dart';
+import 'settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -33,6 +34,13 @@ class MoreScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context)
                 .push(MaterialPageRoute(builder: (context) => const BackupScreen())),
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Settings'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (context) => const SettingsScreen())),
           ),
         ],
       ),

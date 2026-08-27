@@ -4,13 +4,21 @@ import 'package:intl/intl.dart';
 import '../../../../app/theme.dart';
 import '../../domain/transaction_entity.dart';
 import '../../domain/transaction_type.dart';
+import 'edit_transaction_sheet.dart';
 
 /// One ledger row, shared by the dashboard's recent-transactions card and
-/// the full transaction list so the two never visually drift apart.
+/// the full transaction list so the two never visually drift apart. Tapping
+/// opens edit/delete — except for debt-linked rows, which are managed from
+/// the Debts screen (see TransactionRepository's own rejection of edits to
+/// those, which this UI mirrors rather than let people hit that error).
 class TransactionTile extends StatelessWidget {
   const TransactionTile({super.key, required this.transaction});
 
   final TransactionEntity transaction;
+
+  bool get _isEditable =>
+      transaction.type != TransactionType.debtPayment &&
+      transaction.type != TransactionType.debtBorrowing;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +45,15 @@ class TransactionTile extends StatelessWidget {
         '$sign${transaction.amount.format()}',
         style: TextStyle(color: color, fontWeight: FontWeight.w600),
       ),
+      onTap: _isEditable
+          ? () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => EditTransactionSheet(transaction: transaction),
+              )
+          : () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Manage this from the Debts screen.')),
+              ),
     );
   }
 

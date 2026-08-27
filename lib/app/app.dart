@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'lock_gate.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -14,6 +15,7 @@ class FinanceApp extends StatelessWidget {
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
       routerConfig: appRouter,
+      builder: (context, child) => LockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

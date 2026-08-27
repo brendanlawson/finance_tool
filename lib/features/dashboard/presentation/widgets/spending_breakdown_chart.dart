@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import '../../../categories/domain/category_entity.dart';
 import '../../domain/monthly_report.dart';
 
+// A plain grey scale rather than a curated brand palette — distinguishable
+// slice-to-slice without reading as "designed."
 const _paletteFallback = [
-  Color(0xFF1B5E4F),
-  Color(0xFF3E8E7E),
-  Color(0xFF74B49B),
-  Color(0xFFA5C9A1),
-  Color(0xFFDABE99),
-  Color(0xFFC38870),
+  Color(0xFF37474F),
+  Color(0xFF546E7A),
+  Color(0xFF78909C),
+  Color(0xFF90A4AE),
+  Color(0xFFB0BEC5),
+  Color(0xFFCFD8DC),
 ];
 
 class SpendingBreakdownChart extends StatelessWidget {
