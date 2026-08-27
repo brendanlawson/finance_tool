@@ -8,6 +8,7 @@ import '../../application/transaction_providers.dart';
 import '../../domain/transaction_entity.dart';
 import '../../domain/transaction_repository.dart';
 import '../../domain/transaction_type.dart';
+import 'tag_picker.dart';
 
 /// Edit or delete an already-recorded transaction. Only wallet/type/debt
 /// are fixed at creation time (see TransactionUpdateInput's doc) —
@@ -27,6 +28,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   late final _noteController = TextEditingController(text: widget.transaction.note ?? '');
   late String? _categoryId = widget.transaction.categoryId;
   late DateTime _occurredAt = widget.transaction.occurredAtLocalDate.toDateTime();
+  late Set<String> _tagIds = {...widget.transaction.tagIds};
   bool _busy = false;
 
   @override
@@ -99,6 +101,11 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
             controller: _noteController,
             decoration: const InputDecoration(labelText: 'Note'),
           ),
+          const SizedBox(height: 16),
+          TagPicker(
+            selectedTagIds: _tagIds,
+            onChanged: (tags) => setState(() => _tagIds = tags),
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -138,6 +145,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
               occurredAt: _occurredAt,
               note: note.isEmpty ? null : note,
               clearNote: note.isEmpty,
+              tagIds: _tagIds,
             ),
           );
       if (mounted) Navigator.of(context).pop();

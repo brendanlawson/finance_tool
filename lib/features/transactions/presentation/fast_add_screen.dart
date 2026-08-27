@@ -14,6 +14,7 @@ import '../../wallets/domain/wallet_entity.dart';
 import '../application/fast_add_controller.dart';
 import '../domain/transaction_repository.dart';
 import '../domain/transaction_type.dart';
+import 'widgets/tag_picker.dart';
 
 /// The fast-entry flow from §9: Amount → Type → Wallet → Category → Save,
 /// with every field past Amount/Type/Wallet optional so speed never
@@ -38,6 +39,7 @@ class _FastAddScreenState extends ConsumerState<FastAddScreen> {
   String? _categoryId;
   DateTime _occurredAt = DateTime.now();
   bool _defaultsLoaded = false;
+  Set<String> _tagIds = {};
 
   @override
   void dispose() {
@@ -174,6 +176,11 @@ class _FastAddScreenState extends ConsumerState<FastAddScreen> {
               controller: _noteController,
               decoration: const InputDecoration(labelText: 'Note (optional)'),
             ),
+            const SizedBox(height: 16),
+            TagPicker(
+              selectedTagIds: _tagIds,
+              onChanged: (tags) => setState(() => _tagIds = tags),
+            ),
             const SizedBox(height: 24),
             if (submitState.hasError)
               Padding(
@@ -208,6 +215,7 @@ class _FastAddScreenState extends ConsumerState<FastAddScreen> {
       amount: amount,
       occurredAt: _occurredAt,
       note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      tagIds: _tagIds,
     );
 
     final ok = await ref.read(fastAddControllerProvider.notifier).submit(input);

@@ -2,12 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/utils/local_date.dart';
+import '../data/drift_tag_repository.dart';
 import '../data/drift_transaction_repository.dart';
+import '../domain/tag_entity.dart';
+import '../domain/tag_repository.dart';
 import '../domain/transaction_entity.dart';
 import '../domain/transaction_repository.dart';
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   return DriftTransactionRepository(ref.watch(appDatabaseProvider));
+});
+
+final tagRepositoryProvider = Provider<TagRepository>((ref) {
+  return DriftTagRepository(ref.watch(appDatabaseProvider));
+});
+
+final tagsProvider = StreamProvider<List<Tag>>((ref) {
+  return ref.watch(tagRepositoryProvider).watchTags();
 });
 
 class TransactionQuery {
