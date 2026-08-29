@@ -208,6 +208,7 @@ class DriftTransactionRepository implements TransactionRepository {
   Stream<List<TransactionEntity>> watchTransactions({
     String? walletId,
     LocalDateRange? range,
+    String? searchText,
     int limit = 50,
     int offset = 0,
   }) {
@@ -225,6 +226,13 @@ class DriftTransactionRepository implements TransactionRepository {
       query.where((t) =>
           t.occurredAtLocalDate.isBiggerOrEqualValue(range.start.value) &
           t.occurredAtLocalDate.isSmallerOrEqualValue(range.end.value));
+    }
+    final trimmedSearch = searchText?.trim();
+    if (trimmedSearch != null && trimmedSearch.isNotEmpty) {
+      // SQLite's LIKE is case-insensitive for ASCII by default, which is
+      // enough for a simple note search — no need for a separate
+      // lower()/collate dance.
+      query.where((t) => t.note.like('%$trimmedSearch%'));
     }
     return query.watch().asyncMap(_withTags);
   }

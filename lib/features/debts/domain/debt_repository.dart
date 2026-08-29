@@ -84,6 +84,11 @@ abstract interface class DebtRepository {
   /// above.
   Future<void> deletePayment(String paymentId);
 
+  /// Manual status change — e.g. archiving a debt you no longer want on
+  /// the active list, or marking one defaulted. Does not touch
+  /// `currentPrincipal` or any ledger row; it is purely a label change.
+  Future<void> setStatus(String debtId, DebtStatus status);
+
   Future<Money> getRemainingBalance(String debtId);
 
   Stream<Debt?> watchDebt(String debtId);

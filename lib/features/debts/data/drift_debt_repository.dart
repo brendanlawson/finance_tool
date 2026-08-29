@@ -277,6 +277,18 @@ class DriftDebtRepository implements DebtRepository {
   }
 
   @override
+  Future<void> setStatus(String debtId, DebtStatus status) async {
+    final debt = await _requireDebt(debtId);
+    await (_db.update(_db.debts)..where((d) => d.id.equals(debtId))).write(
+      DebtsCompanion(
+        status: Value(status.storageValue),
+        revision: Value(debt.revision + 1),
+        updatedAt: Value(utcNowMillis()),
+      ),
+    );
+  }
+
+  @override
   Future<Money> getRemainingBalance(String debtId) async {
     final debt = await _requireDebt(debtId);
     return Money(minorUnits: debt.currentPrincipalMinor, currencyCode: debt.currencyCode);

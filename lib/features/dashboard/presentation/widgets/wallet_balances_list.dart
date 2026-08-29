@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../wallets/domain/wallet_entity.dart';
+import '../../../wallets/presentation/wallets_screen.dart';
 
 class WalletBalancesList extends StatelessWidget {
   const WalletBalancesList({super.key, required this.wallets});
@@ -21,7 +22,20 @@ class WalletBalancesList extends StatelessWidget {
             if (wallets.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text('No wallets yet.', style: theme.textTheme.bodyMedium),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('No wallets yet.', style: theme.textTheme.bodyMedium),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add a wallet'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const WalletsScreen()),
+                      ),
+                    ),
+                  ],
+                ),
               )
             else
               for (final wallet in wallets)

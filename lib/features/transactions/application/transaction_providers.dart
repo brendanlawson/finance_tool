@@ -24,10 +24,17 @@ final tagsProvider = StreamProvider<List<Tag>>((ref) {
 class TransactionQuery {
   final String? walletId;
   final LocalDateRange? range;
+  final String? searchText;
   final int limit;
   final int offset;
 
-  const TransactionQuery({this.walletId, this.range, this.limit = 50, this.offset = 0});
+  const TransactionQuery({
+    this.walletId,
+    this.range,
+    this.searchText,
+    this.limit = 50,
+    this.offset = 0,
+  });
 
   @override
   bool operator ==(Object other) =>
@@ -35,12 +42,19 @@ class TransactionQuery {
       other.walletId == walletId &&
       other.range?.start.value == range?.start.value &&
       other.range?.end.value == range?.end.value &&
+      other.searchText == searchText &&
       other.limit == limit &&
       other.offset == offset;
 
   @override
-  int get hashCode =>
-      Object.hash(walletId, range?.start.value, range?.end.value, limit, offset);
+  int get hashCode => Object.hash(
+        walletId,
+        range?.start.value,
+        range?.end.value,
+        searchText,
+        limit,
+        offset,
+      );
 }
 
 /// Recomputes (re-runs its SQL query) whenever any write touches the
@@ -53,6 +67,7 @@ final transactionsProvider =
   return ref.watch(transactionRepositoryProvider).watchTransactions(
         walletId: query.walletId,
         range: query.range,
+        searchText: query.searchText,
         limit: query.limit,
         offset: query.offset,
       );

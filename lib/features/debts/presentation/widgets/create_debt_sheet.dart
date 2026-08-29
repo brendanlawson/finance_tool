@@ -10,10 +10,10 @@ import '../../application/debt_providers.dart';
 import '../../domain/debt_entity.dart';
 import '../../domain/debt_repository.dart';
 
-/// Creating a debt (§6). Interest rate and installment schedule are
-/// modeled in the domain/database (see Debt/NewDebtInput) but not yet
-/// exposed as fields here — a deliberate scope cut for this foundation,
-/// not a data-model gap.
+/// Creating a debt (§6). Interest rate, due date, and installment
+/// schedule live under an "Optional details" section — filling them in
+/// isn't required to record a debt, matching the fast-entry philosophy
+/// (§9) applied here too: the required fields (name, amount) come first.
 class CreateDebtSheet extends ConsumerStatefulWidget {
   const CreateDebtSheet({super.key});
 
@@ -25,9 +25,27 @@ class _CreateDebtSheetState extends ConsumerState<CreateDebtSheet> {
   final _nameController = TextEditingController();
   final _counterpartyController = TextEditingController();
   final _principalController = TextEditingController();
+  final _interestRateController = TextEditingController();
+  final _installmentAmountController = TextEditingController();
+  final _notesController = TextEditingController();
+
   DebtType _type = DebtType.personalLoan;
   String? _disbursementWalletId;
   bool _recordDisbursement = false;
+  LocalDate? _dueDate;
+  String? _interestPeriod;
+  InstallmentFrequency? _installmentFrequency;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _counterpartyController.dispose();
+    _principalController.dispose();
+    _interestRateController.dispose();
+    _installmentAmountController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +66,11 @@ class _CreateDebtSheetState extends ConsumerState<CreateDebtSheet> {
           children: [
             Text('New debt', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Name')),
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<DebtType>(
               initialValue: _type,
@@ -88,13 +110,91 @@ class _CreateDebtSheetState extends ConsumerState<CreateDebtSheet> {
                 ],
                 onChanged: (value) => setState(() => _disbursementWalletId = value),
               ),
-            const SizedBox(height: 20),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: const Text('Optional details'),
+              childrenPadding: const EdgeInsets.only(bottom: 8),
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Due date'),
+                  subtitle: Text(_dueDate?.value ?? 'Not set'),
+                  trailing: const Icon(Icons.calendar_today_outlined),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _dueDate?.toDateTime() ?? DateTime.now(),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setState(() => _dueDate = LocalDate.fromDateTime(picked));
+                  },
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _interestRateController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(labelText: 'Interest rate (%/period)'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String?>(
+                        initialValue: _interestPeriod,
+                        decoration: const InputDecoration(labelText: 'Per'),
+                        items: const [
+                          DropdownMenuItem(value: 'monthly', child: Text('Month')),
+                          DropdownMenuItem(value: 'yearly', child: Text('Year')),
+                        ],
+                        onChanged: (value) => setState(() => _interestPeriod = value),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _installmentAmountController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(labelText: 'Installment ($baseCurrency)'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<InstallmentFrequency?>(
+                        initialValue: _installmentFrequency,
+                        decoration: const InputDecoration(labelText: 'Frequency'),
+                        items: const [
+                          DropdownMenuItem(value: InstallmentFrequency.weekly, child: Text('Weekly')),
+                          DropdownMenuItem(value: InstallmentFrequency.biweekly, child: Text('Biweekly')),
+                          DropdownMenuItem(value: InstallmentFrequency.monthly, child: Text('Monthly')),
+                        ],
+                        onChanged: (value) => setState(() => _installmentFrequency = value),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(labelText: 'Notes'),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             FilledButton(
               onPressed: () async {
                 if (_nameController.text.trim().isEmpty || _principalController.text.trim().isEmpty) {
                   return;
                 }
                 final principal = Money.parse(_principalController.text, baseCurrency);
+                final ratePercent = double.tryParse(_interestRateController.text.trim());
+                final installmentText = _installmentAmountController.text.trim();
                 await ref.read(debtRepositoryProvider).createDebt(
                       NewDebtInput(
                         name: _nameController.text,
@@ -103,7 +203,14 @@ class _CreateDebtSheetState extends ConsumerState<CreateDebtSheet> {
                             ? null
                             : _counterpartyController.text.trim(),
                         originalPrincipal: principal,
+                        interestRateBps: ratePercent == null ? null : (ratePercent * 100).round(),
+                        interestPeriod: ratePercent == null ? null : _interestPeriod,
                         startDate: LocalDate.today(),
+                        dueDate: _dueDate,
+                        installmentAmount:
+                            installmentText.isEmpty ? null : Money.parse(installmentText, baseCurrency),
+                        installmentFrequency: installmentText.isEmpty ? null : _installmentFrequency,
+                        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
                         disbursementWalletId:
                             _recordDisbursement ? _disbursementWalletId : null,
                       ),

@@ -67,9 +67,15 @@ abstract interface class TransactionRepository {
   /// tombstoning.
   Future<void> deleteTransaction(String id);
 
+  /// [searchText], when non-empty, matches against the transaction's note
+  /// (case-insensitive substring) — the one free-text field a ledger row
+  /// has. This is a real database query (a `LIKE` filter), not a
+  /// client-side scan of an already-fetched page, so it searches the full
+  /// history regardless of [limit]/[offset] (§2.1/§19).
   Stream<List<TransactionEntity>> watchTransactions({
     String? walletId,
     LocalDateRange? range,
+    String? searchText,
     int limit = 50,
     int offset = 0,
   });

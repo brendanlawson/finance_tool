@@ -97,6 +97,28 @@ void main() {
       expect(list, isEmpty);
     });
 
+    test('watchTransactions with searchText matches note case-insensitively', () async {
+      final wallet = await createTestWallet(wallets, initialBalanceMinor: 500000);
+      await transactions.createTransaction(NewTransactionInput(
+        type: TransactionType.expense,
+        walletId: wallet.id,
+        amount: Money(minorUnits: 1000, currencyCode: testCurrency),
+        note: 'Coffee with Anna',
+      ));
+      await transactions.createTransaction(NewTransactionInput(
+        type: TransactionType.expense,
+        walletId: wallet.id,
+        amount: Money(minorUnits: 2000, currencyCode: testCurrency),
+        note: 'Groceries',
+      ));
+
+      final results =
+          await transactions.watchTransactions(searchText: 'coffee').first;
+
+      expect(results, hasLength(1));
+      expect(results.single.note, 'Coffee with Anna');
+    });
+
     test('debt-linked transaction types are rejected outside the Debts feature', () async {
       final wallet = await createTestWallet(wallets, initialBalanceMinor: 500000);
       await expectLater(

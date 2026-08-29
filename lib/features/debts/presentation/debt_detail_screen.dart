@@ -6,6 +6,7 @@ import '../../../core/money/money.dart';
 import '../../wallets/application/wallet_providers.dart';
 import '../../wallets/domain/wallet_entity.dart';
 import '../application/debt_providers.dart';
+import '../domain/debt_entity.dart';
 import '../domain/debt_payment_entity.dart';
 import '../domain/debt_repository.dart';
 
@@ -20,7 +21,23 @@ class DebtDetailScreen extends ConsumerWidget {
     final payments = ref.watch(debtPaymentsProvider(debtId));
 
     return Scaffold(
-      appBar: AppBar(title: Text(debt.value?.name ?? 'Debt')),
+      appBar: AppBar(
+        title: Text(debt.value?.name ?? 'Debt'),
+        actions: [
+          if (debt.value != null)
+            PopupMenuButton<DebtStatus>(
+              onSelected: (status) => ref.read(debtRepositoryProvider).setStatus(debtId, status),
+              itemBuilder: (context) => [
+                if (debt.value!.status != DebtStatus.active)
+                  const PopupMenuItem(value: DebtStatus.active, child: Text('Mark active')),
+                if (debt.value!.status != DebtStatus.archived)
+                  const PopupMenuItem(value: DebtStatus.archived, child: Text('Archive')),
+                if (debt.value!.status != DebtStatus.defaulted)
+                  const PopupMenuItem(value: DebtStatus.defaulted, child: Text('Mark defaulted')),
+              ],
+            ),
+        ],
+      ),
       floatingActionButton: debt.value == null || debt.value!.isSettled
           ? null
           : FloatingActionButton.extended(
@@ -139,7 +156,16 @@ class _RecordPaymentSheet extends ConsumerStatefulWidget {
 
 class _RecordPaymentSheetState extends ConsumerState<_RecordPaymentSheet> {
   final _amountController = TextEditingController();
+  final _interestController = TextEditingController();
   String? _walletId;
+  String? _error;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _interestController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,8 +191,17 @@ class _RecordPaymentSheetState extends ConsumerState<_RecordPaymentSheet> {
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: 'Amount',
+              labelText: 'Total amount paid',
               helperText: debt == null ? null : 'Remaining: ${debt.currentPrincipal.format()}',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _interestController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Of which interest (optional)',
+              helperText: 'Leave blank if this payment is 100% principal',
             ),
           ),
           const SizedBox(height: 12),
@@ -176,6 +211,10 @@ class _RecordPaymentSheetState extends ConsumerState<_RecordPaymentSheet> {
             items: [for (final w in wallets) DropdownMenuItem(value: w.id, child: Text(w.name))],
             onChanged: (value) => setState(() => _walletId = value),
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ],
           const SizedBox(height: 20),
           FilledButton(
             onPressed: () async {
@@ -183,12 +222,20 @@ class _RecordPaymentSheetState extends ConsumerState<_RecordPaymentSheet> {
                 return;
               }
               final amount = Money.parse(_amountController.text, debt.currencyCode);
+              final interestText = _interestController.text.trim();
+              final interest =
+                  interestText.isEmpty ? Money.zero(debt.currencyCode) : Money.parse(interestText, debt.currencyCode);
+              if (interest > amount) {
+                setState(() => _error = 'Interest cannot be more than the total amount.');
+                return;
+              }
+              final principal = amount - interest;
               await ref.read(debtRepositoryProvider).recordPayment(
                     RecordDebtPaymentInput(
                       debtId: widget.debtId,
                       walletId: _walletId!,
                       amount: amount,
-                      principalPortion: amount,
+                      principalPortion: principal,
                     ),
                   );
               if (context.mounted) Navigator.of(context).pop();
